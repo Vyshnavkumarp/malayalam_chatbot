@@ -1,13 +1,32 @@
 from flask import Flask, request, jsonify, send_from_directory, render_template
 from transformers import pipeline
 from googletrans import Translator
+from newspaper import Article
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer
 import os
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# Specify the model explicitly
-qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+# Use RoBERTa model
+qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
 translator = Translator()
+
+def extract_text_from_url(url):
+    try:
+        article = Article(url)
+        article.download()
+        article.parse()
+        return article.text
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def summarize_text(text, sentence_count=5):
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    summarizer = LsaSummarizer()
+    summary = summarizer(parser.document, sentence_count)
+    return ' '.join(str(sentence) for sentence in summary)
 
 @app.route('/')
 def index():
@@ -21,20 +40,29 @@ def send_static(path):
 def ask():
     data = request.get_json()
     question = data['question']
-    pdf_text = data['pdfText']
+    pdf_text = data.get('pdfText', '')
+    url = data.get('url', '')
 
-    print("Question:", question)
-    print("PDF Text:", pdf_text[:1000])  # Print the first 1000 characters for debugging
+    if url:
+        web_text = extract_text_from_url(url)
+        print("Extracted web text:", web_text)  # Print first 1000 characters for debugging
+        if 'Error' in web_text:
+            return jsonify({'error': 'Failed to extract text from URL'}), 500
+    else:
+        web_text = pdf_text
 
-    # Answer the question based on the PDF text
-    malayalam_question = translator.translate(question, src='ml', dest='en').text
-    print("malayalam_qs:", malayalam_question)
-    answer = qa_pipeline(question=malayalam_question, context=pdf_text)['answer']
-    print("Answer:", answer)  # Debug print
-
-    # Translate the answer to Malayalam
-    malayalam_answer = translator.translate(answer, src='en', dest='ml').text
-    print("Malayalam Answer:", malayalam_answer)  # Debug print
+    try:
+        # Translate the question from Malayalam to English
+        malayalam_question = translator.translate(question, src='ml', dest='en').text
+        print("Translated question to English:", malayalam_question)
+        # Perform question answering
+        answer = qa_pipeline(question=malayalam_question, context=web_text)['answer']
+        print("Answer:", answer)
+        # Translate the answer from English to Malayalam
+        malayalam_answer = translator.translate(answer, src='en', dest='ml').text
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': 'Translation or QA failed'}), 500
 
     return jsonify({'answer': malayalam_answer})
 

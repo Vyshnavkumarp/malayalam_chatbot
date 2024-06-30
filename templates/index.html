@@ -12,8 +12,12 @@
       margin: 0 auto;
       padding: 20px;
     }
-    input[type="file"] {
+    input[type="file"], input[type="text"] {
       margin-bottom: 20px;
+      width: 100%;  /* Make input fields wider */
+    }
+    #question {
+      height: 100px;  /* Increase the height of the question input */
     }
     #chat {
       border: 1px solid #ccc;
@@ -27,7 +31,8 @@
 <body>
   <div id="container">
     <h1>Malayalam PDF Chatbot</h1>
-    <input type="file" id="pdf-upload">
+    <input type="file" id="pdf-upload"><br>
+    <input type="text" id="url" placeholder="Enter website URL..."><br>
     <div id="chat"></div>
     <input type="text" id="question" placeholder="Ask a question...">
     <button id="ask">Ask</button>

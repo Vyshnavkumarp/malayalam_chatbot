@@ -1,6 +1,6 @@
 from googletrans import Translator
 
 translator = Translator()
-malayalam_text = "ಟೈಟಾನಿಕ್ ಏನಾಯ್ತು"
-translated_text = translator.translate(malayalam_text, src='kn', dest='en').text
+malayalam_text = "ആരാണ് വിനായക്"
+translated_text = translator.translate(malayalam_text, src='ml', dest='en').text
 print(translated_text)

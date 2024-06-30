@@ -4,7 +4,7 @@ document.getElementById('pdf-upload').addEventListener('change', async (event) =
     const reader = new FileReader();
     reader.onload = async (e) => {
       const pdfData = new Uint8Array(e.target.result);
-      const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
+      const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
       let text = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -22,13 +22,14 @@ document.getElementById('pdf-upload').addEventListener('change', async (event) =
 document.getElementById('ask').addEventListener('click', async () => {
   const question = document.getElementById('question').value;
   const pdfText = localStorage.getItem('pdfText');
+  const url = document.getElementById('url').value;
 
   const response = await fetch('/ask', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ question, pdfText }),
+    body: JSON.stringify({ question, pdfText, url }),
   });
 
   const result = await response.json();
