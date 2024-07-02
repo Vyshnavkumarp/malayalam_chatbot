@@ -9,8 +9,8 @@ import os
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# Use RoBERTa model
-qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
+# Use T5 model
+qa_pipeline = pipeline("text2text-generation", model="t5-large")
 translator = Translator()
 
 def extract_text_from_url(url):
@@ -46,6 +46,8 @@ def ask():
     if url:
         web_text = extract_text_from_url(url)
         print("Extracted web text:", web_text)  # Print first 1000 characters for debugging
+        web_text = summarize_text(web_text)
+        print("Summarized Text: ", web_text)
         if 'Error' in web_text:
             return jsonify({'error': 'Failed to extract text from URL'}), 500
     else:
@@ -56,7 +58,8 @@ def ask():
         malayalam_question = translator.translate(question, src='ml', dest='en').text
         print("Translated question to English:", malayalam_question)
         # Perform question answering
-        answer = qa_pipeline(question=malayalam_question, context=web_text)['answer']
+        input_text = f"question: {malayalam_question} context: {web_text}"
+        answer = qa_pipeline(input_text)[0]['generated_text']
         print("Answer:", answer)
         # Translate the answer from English to Malayalam
         malayalam_answer = translator.translate(answer, src='en', dest='ml').text
